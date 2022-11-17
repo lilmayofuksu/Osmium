@@ -43,6 +43,5 @@ async def handleJsonPacket(data: str, ws: WebSocketServerProtocol):
             "source": not direction.value,
             "time": ts
         }
-        tmp_arr = []
-        tmp_arr.append(packet_obj)
-        await ws.send(json.dumps({"cmd":"PacketNotify", "data": tmp_arr }))
+
+        await ws.send(json.dumps({"cmd":"PacketNotify", "data": [packet_obj] }))
