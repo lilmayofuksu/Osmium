@@ -10,6 +10,7 @@ from loguru import logger
 from websockets.server import WebSocketServerProtocol
 
 from out import proto
+
 class PacketDirection(enum.Enum):
     Send = 0
     Receive = 1
@@ -197,7 +198,7 @@ def getCombatInvokeProto(argument_type: proto.CombatTypeArgument) -> betterproto
         case proto.CombatTypeArgument.COMBAT_GRAPPLING_HOOK_MOVE:
             return proto.EvtGrapplingHookMove
 
-async def handleAbilityInvokes(message: proto.AbilityInvocationsNotify) -> list[dict]:
+def handleAbilityInvokes(message: proto.AbilityInvocationsNotify) -> list[dict]:
     invokes = []
     for invoke in message.invokes:
         invoke_obj = invoke.to_dict()
@@ -214,7 +215,7 @@ async def handleAbilityInvokes(message: proto.AbilityInvocationsNotify) -> list[
 
     return invokes
 
-async def handleCombatInvokes(message: proto.CombatInvocationsNotify):
+def handleCombatInvokes(message: proto.CombatInvocationsNotify):
     invokes = []
     for invoke in message.invoke_list:
         invoke_obj = invoke.to_dict()
@@ -231,7 +232,7 @@ async def handleCombatInvokes(message: proto.CombatInvocationsNotify):
 
     return invokes
 
-async def handleUnionCmd(message: proto.UnionCmdNotify, packet_obj: dict[str, object]):
+def handleUnionCmd(message: proto.UnionCmdNotify, packet_obj: dict[str, object]):
     for idx, cmd in enumerate(message.cmd_list):
         if cmd.message_id in cmdid_map:
             cmd_message: Union[proto.CombatInvocationsNotify,
@@ -241,9 +242,9 @@ async def handleUnionCmd(message: proto.UnionCmdNotify, packet_obj: dict[str, ob
             packet_obj["object"]["cmdList"][idx]["protoName"] = cmd_message.__class__.__name__
             match cmd_message.__class__.__name__:
                 case "CombatInvocationsNotify":
-                    packet_obj["object"]["cmdList"][idx]["invokes"] = await handleCombatInvokes(cmd_message)
+                    packet_obj["object"]["cmdList"][idx]["invokes"] = handleCombatInvokes(cmd_message)
                 case "AbilityInvocationsNotify":
-                    packet_obj["object"]["cmdList"][idx]["invokes"] = await handleAbilityInvokes(cmd_message)
+                    packet_obj["object"]["cmdList"][idx]["invokes"] = handleAbilityInvokes(cmd_message)
                 case _:
                     ...
 
@@ -269,6 +270,6 @@ async def handleJsonPacket(data: str, ws: WebSocketServerProtocol) -> None:
         }
 
         if message.__class__.__name__ == "UnionCmdNotify":
-            await handleUnionCmd(message, packet_obj)
+            handleUnionCmd(message, packet_obj)
 
         await ws.send(json.dumps({"cmd": "PacketNotify", "data": [packet_obj]}))
